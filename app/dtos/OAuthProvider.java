@@ -8,18 +8,18 @@ public class OAuthProvider {
 	private final String displayName;
 	private final String tokenUrl;
     private final String authorizeUrl;
-	private final String clientId;
+	private final String clientClient;
 	private final String clientSecret;
 	private final String scopes;
 	private final String userInfoUrl;
 	private final Function<OAuthContext, CompletionStage<Token>> tokenRetriever;
 	private final Function<OAuthContext, CompletionStage<MeDto>> currentUserIdentifier;
 
-	public OAuthProvider(String displayName, String tokenUrl, String authorizeUrl, String clientId, String clientSecret, String scopes, String userInfoUrl, Function<OAuthContext, CompletionStage<Token>> tokenRetriever, Function<OAuthContext, CompletionStage<MeDto>> currentUserIdentifier) {
+	public OAuthProvider(String displayName, String tokenUrl, String authorizeUrl, String clientClient, String clientSecret, String scopes, String userInfoUrl, Function<OAuthContext, CompletionStage<Token>> tokenRetriever, Function<OAuthContext, CompletionStage<MeDto>> currentUserIdentifier) {
 		this.displayName = displayName;
 		this.tokenUrl = tokenUrl;
 		this.authorizeUrl = authorizeUrl;
-		this.clientId = clientId;
+		this.clientClient = clientClient;
 		this.clientSecret = clientSecret;
 		this.scopes = scopes;
 		this.userInfoUrl = userInfoUrl;
@@ -39,8 +39,8 @@ public class OAuthProvider {
 		return authorizeUrl;
 	}
 
-	public String getClientId() {
-		return clientId;
+	public String getClientClient() {
+		return clientClient;
 	}
 
 	public String getClientSecret() {
@@ -69,7 +69,7 @@ public class OAuthProvider {
 				"displayName='" + displayName + '\'' +
 				", tokenUrl='" + tokenUrl + '\'' +
 				", authorizeUrl='" + authorizeUrl + '\'' +
-				", clientId='" + clientId + '\'' +
+				", clientClient='" + clientClient + '\'' +
 				", clientSecret='" + clientSecret + '\'' +
 				", scopes='" + scopes + '\'' +
 				", userInfoUrl='" + userInfoUrl + '\'' +

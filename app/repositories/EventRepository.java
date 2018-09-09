@@ -4,25 +4,20 @@ import models.Event;
 import models.EventType;
 import models.ProviderLink;
 import models.User;
-import org.jongo.MongoCollection;
 import play.mvc.Http.Request;
-import uk.co.panaxiom.playjongo.PlayJongo;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import io.ebean.*;
+
 @Singleton
 public class EventRepository {
 
-    private MongoCollection collection;
-
-    @Inject
-    public EventRepository(PlayJongo playJongo) {
-        this.collection = playJongo.jongo().getCollection("event");
-    }
+    private static final Finder<Long, Event> find = new Finder<>(Event.class);
 
     public void save(Event u){
-        collection.save(u);
+        Ebean.save(u);
     }
 
     private void fillAndSave(Event event, Request request){
@@ -36,7 +31,7 @@ public class EventRepository {
     public void login(Request request, User user, String login) {
         fillAndSave(new Event(user.getId(), null, null, EventType.LOGIN), request);
     }
-    public void badLogin(Request request, String userId, String login) {
+    public void badLogin(Request request, Long userId, String login) {
         fillAndSave(new Event(userId, login, null, EventType.BAD_LOGIN), request);
     }
     public void register(Request request, User user) {

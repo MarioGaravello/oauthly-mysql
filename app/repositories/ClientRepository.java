@@ -1,9 +1,6 @@
 package repositories;
 
 import models.Client;
-import org.jongo.MongoCollection;
-import org.jongo.MongoCursor;
-import uk.co.panaxiom.playjongo.PlayJongo;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -11,26 +8,34 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import io.ebean.*;
+
 @Singleton
 public class ClientRepository {
 
-    private MongoCollection collection;
+    private static final Finder<Long, Client> find = new Finder<>(Client.class);
 
-    @Inject
-    public ClientRepository(PlayJongo playJongo) {
-        this.collection = playJongo.jongo().getCollection("client");
+
+    public Long findClientId(String client){
+      Client c = find.query().where().eq("client", client).findOne();
+      return c.getId();
     }
 
-    public Client findById(String id) {
-        return collection.findOne("{_id:#}", id).as(Client.class);
+    //return client
+    public Client findById(Long id) {
+      return find.query().where().eq("id", id).findOne();
+    }
+
+    public Client findByClient(String client) {
+      return find.query().where().eq("client", client).findOne();
     }
 
     public void save(Client u){
-        collection.save(u);
+        Ebean.save(u);
     }
 
-    public List<Client> findByOwnerId(String ownerId){
-        MongoCursor<Client> cursor = collection.find("{ownerId:#}", ownerId).as(Client.class);
-        return StreamSupport.stream(cursor.spliterator(), false).collect(Collectors.toList());
+    //Return a list of client
+    public List<Client> findByOwnerId(Long ownerId) {
+      return find.query().where().eq("owner_id", ownerId).findList();
     }
 }

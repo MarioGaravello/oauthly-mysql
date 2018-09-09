@@ -1,17 +1,29 @@
 package models;
 
-import org.jongo.marshall.jackson.oid.MongoId;
+import javax.persistence.*;
+import java.util.Date;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import play.data.validation.Constraints;
+
+import io.ebean.*;
 
 /**
  * Created by Selim Eren Bekçe on 7.01.2018.
  */
+ @Entity
 public class Event {
 
-    @MongoId
-    private String id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+    private Long id;
     private long timestamp = System.currentTimeMillis();
     private EventType eventType;
-    private String userId;
+    private Long userId;
     private String ipAddress;
     private String userAgent;
     private Object oldValue;
@@ -20,7 +32,7 @@ public class Event {
     public Event() {
     }
 
-    public Event(String userId, Object oldValue, Object newValue, EventType eventType) {
+    public Event(Long userId, Object oldValue, Object newValue, EventType eventType) {
         this();
         this.userId = userId;
         this.oldValue = oldValue;
@@ -28,19 +40,19 @@ public class Event {
         this.eventType = eventType;
     }
 
-    public String getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public String getUserId() {
+    public Long getUserId() {
         return userId;
     }
 
-    public void setUserId(String userId) {
+    public void setUserId(Long userId) {
         this.userId = userId;
     }
 

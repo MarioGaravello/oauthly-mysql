@@ -4,11 +4,11 @@ import play.data.validation.Constraints;
 
 public class ClientDto {
     @Constraints.Required
-    @Constraints.MinLength(3)
-    @Constraints.MaxLength(30)
+    @Constraints.MinLength(1)
+    @Constraints.MaxLength(100)
     public String name;
     @Constraints.Required
-    public String redirectUri;
-    public String allowedOrigin;
+    public String redirect_uri;
+    public String allowed_origin;
     public boolean trusted;
 }

@@ -143,7 +143,7 @@ public class ProfileController extends Controller {
         return jwtUtils.prepareCookieThenRedirect(user, next);
     }
 
-    public Result linkProvider(String linkId) {
+    public Result linkProvider(Long linkId) {
         User user = request().attrs().get(AuthorizationServerSecure.USER);
         ProviderLink link = providerLinkRepository.findById(linkId);
         if(link == null){
@@ -160,7 +160,7 @@ public class ProfileController extends Controller {
         return redirect(routes.ProfileController.get());
     }
 
-    public Result unlinkProvider(String linkId){
+    public Result unlinkProvider(Long linkId){
         User user = request().attrs().get(AuthorizationServerSecure.USER);
         ProviderLink link = providerLinkRepository.findById(linkId);
         if(link == null || !Objects.equals(link.getUserId(), user.getId())){

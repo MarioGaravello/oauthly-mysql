@@ -31,12 +31,12 @@ public class ClientController extends Controller {
 
     public Result create() {
         User user = request().attrs().get(AuthorizationServerSecure.USER);
-        return ok(views.html.client.render(user, new Client()));
+        return ok(views.html.client.render(user, new Client(user)));
     }
 
-    public Result edit(String id) {
+    public Result edit(String client_id) {
         User user = request().attrs().get(AuthorizationServerSecure.USER);
-        Client client = clientRepository.findById(id);
+        Client client = clientRepository.findByClient(client_id);
         if(client == null)
             return badRequest("client not found");
         if(!Objects.equals(client.getOwnerId(), user.getId()))
@@ -44,19 +44,26 @@ public class ClientController extends Controller {
         return ok(views.html.client.render(user, client));
     }
 
-    public Result addUpdateClient(String id) {
+    public Result addUpdateClient(String client_id) {
         User user = request().attrs().get(AuthorizationServerSecure.USER);
+        Long id;
+        if(client_id == ""){
+          id = null;
+        }else{
+          id = clientRepository.findClientId(client_id);
+        }
+
         try {
             Form<ClientDto> form = formFactory.form(ClientDto.class).bindFromRequest();
             ClientDto dto = form.get();
-            if(id == null || id.isEmpty()){
-                Client client = new Client();
-                client.setId(Utils.newId());
+            if(id == null){
+                Client client = new Client(user);
+                client.setClient(Utils.newClient());
                 client.setSecret(Utils.newSecret());
                 client.setOwnerId(user.getId());
                 client.setName(dto.name);
-                client.setRedirectUri(dto.redirectUri);
-                client.setAllowedOrigin(dto.allowedOrigin);
+                client.setRedirectUri(dto.redirect_uri);
+                client.setAllowedOrigin(dto.allowed_origin);
                 client.setTrusted(dto.trusted);
                 clientRepository.save(client);
                 flash("info", "Create client successful");
@@ -66,8 +73,8 @@ public class ClientController extends Controller {
                     throw new IllegalAccessException();
                 }
                 client.setName(dto.name);
-                client.setRedirectUri(dto.redirectUri);
-                client.setAllowedOrigin(dto.allowedOrigin);
+                client.setRedirectUri(dto.redirect_uri);
+                client.setAllowedOrigin(dto.allowed_origin);
                 client.setTrusted(dto.trusted);
                 clientRepository.save(client);
                 flash("info", "Update successful");
@@ -75,10 +82,10 @@ public class ClientController extends Controller {
             return redirect(routes.ClientController.get());
         } catch (Exception e) {
             flash("error", e.getMessage());
-            if(id == null || id.isEmpty()) {
+            if(id == null) {
                 return redirect(routes.ClientController.create());
             } else {
-                return redirect(routes.ClientController.edit(id));
+                return redirect(routes.ClientController.edit(client_id));
             }
         }
     }

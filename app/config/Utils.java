@@ -27,7 +27,7 @@ public class Utils {
         return sb.toString();
     }
 
-    public static String newId() {
+    public static String newClient() {
         return randomString(20);
 //        return RandomStringUtils.randomAlphanumeric(20);
     }

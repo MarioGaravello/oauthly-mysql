@@ -42,13 +42,13 @@ public class OAuthClientController extends Controller {
 			return notFound("N/A");
 		}
 		OAuthContext context = new OAuthContext(provider, ws);
-		String state = Base64.encodeBase64String(String.format("%s,%s", Utils.newId(), next == null ? "" : next).getBytes(StandardCharsets.UTF_8));
+		String state = Base64.encodeBase64String(String.format("%s,%s", null, next == null ? "" : next).getBytes(StandardCharsets.UTF_8));
 		context.setState(state);
 		context.setRedirectUri(routes.OAuthClientController.callback(providerKey, Optional.empty(), Optional.empty(), Optional.empty()).absoluteURL(request()));
 		flash("state", state);
 		return redirect(context.prepareAuthorizeUrl());
 	}
-	
+
 	@config.AuthorizationServerSecure(optional = true)
 	public CompletionStage<Result> callback(String providerKey, Optional<String> code, Optional<String> error, Optional<String> state) {
 		OAuthProvider provider = manager.getProvider(providerKey);
@@ -84,7 +84,6 @@ public class OAuthClientController extends Controller {
 					User user = null;
 					if(link == null) {
 						link = new ProviderLink();
-						link.setId(Utils.newId());
 						link.setProviderKey(providerKey);
 						link.setRemoteUserId(dto.getId());
 						link.setRemoteUserName(dto.getName());

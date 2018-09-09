@@ -34,7 +34,7 @@ public class AuthorizationServerManager {
                     case "facebook":
                         currentUserIdentifier = new CurrentUserIdentifierOverUserInfoUrl(wsResponse -> {
                             JsonNode node = wsResponse.asJson();
-                            String id = node.get("id").asText();
+                            Long id = node.get("id").asLong();
                             String name = node.get("name").textValue();
                             String email = node.get("email") == null ? null : node.get("email").textValue();
                             return new MeDto(id, name, email);
@@ -46,7 +46,7 @@ public class AuthorizationServerManager {
                             JsonNode node = wsResponse.asJson();
                             Logger.info(node.toString());
                             String email = node.get("emailAddresses").get(0).get("value").textValue();
-                            String id = node.get("resourceName").asText();
+                            Long id = node.get("resourceName").asLong();
                             String name = node.get("names").get(0).get("displayName").textValue();
                             return new MeDto(id, name, email);
                         });
@@ -59,7 +59,7 @@ public class AuthorizationServerManager {
                         provider.getString("displayName"),
                         provider.getString("tokenUrl"),
                         provider.getString("authorizeUrl"),
-                        provider.getString("clientId"),
+                        provider.getString("clientClient"),
                         provider.getString("clientSecret"),
                         provider.getString("scopes"),
                         provider.getString("userInfoUrl"),

@@ -1,17 +1,30 @@
 package models;
 
-import org.jongo.marshall.jackson.oid.MongoId;
+import javax.persistence.*;
+import java.util.Date;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import play.data.validation.Constraints;
+
+import io.ebean.*;
 
 /**
  * Client, a.k.a. App
  * Created by Selim Eren Bekçe on 15.08.2017.
  */
-public class Client {
-    @MongoId
-    private String id;
+ @Entity
+public class Client extends Model{
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String client;
     private String secret;
     private String name;
-    private String logoUrl;
+    private String logo_url;
     /**
      * If true, then all grants shall automatically be given without user consent
      */
@@ -20,22 +33,33 @@ public class Client {
      * Origin of redirect uri for each request shall match this.
      * e.g. 'http://localhost:8080'
      */
-    private String redirectUri;
+    private String redirect_uri;
     /**
      * The id of the managing user of this client
      */
-    private String ownerId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    public User user;
+
     /**
      * Contains the allowed origin for using the JS authentication. Must match incoming Origin header 1-1 else the request will not be allowed.
      */
-    private String allowedOrigin;
+    private String allowed_origin;
 
-    public String getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getClient() {
+        return client;
+    }
+
+    public void setClient(String client) {
+        this.client = client;
     }
 
     public String getSecret() {
@@ -55,11 +79,11 @@ public class Client {
     }
 
     public String getLogoUrl() {
-        return logoUrl;
+        return logo_url;
     }
 
     public void setLogoUrl(String logoUrl) {
-        this.logoUrl = logoUrl;
+        this.logo_url = logoUrl;
     }
 
     public boolean isTrusted() {
@@ -71,26 +95,30 @@ public class Client {
     }
 
     public String getRedirectUri() {
-        return redirectUri;
+        return redirect_uri;
     }
 
     public void setRedirectUri(String redirectUri) {
-        this.redirectUri = redirectUri;
+        this.redirect_uri = redirectUri;
     }
 
-    public String getOwnerId() {
-        return ownerId;
+    public Long getOwnerId() {
+        return user.getId();
     }
 
-    public void setOwnerId(String ownerId) {
-        this.ownerId = ownerId;
+    public void setOwnerId(Long ownerId) {
+        user.setId(ownerId);
     }
 
     public String getAllowedOrigin() {
-        return allowedOrigin;
+        return allowed_origin;
     }
 
     public void setAllowedOrigin(String allowedOrigin) {
-        this.allowedOrigin = allowedOrigin;
+        this.allowed_origin = allowedOrigin;
+    }
+
+    public Client(User u) {
+        this.user = u;
     }
 }

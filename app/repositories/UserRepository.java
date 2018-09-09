@@ -2,8 +2,6 @@ package repositories;
 
 import config.Utils;
 import models.User;
-import org.jongo.MongoCollection;
-import uk.co.panaxiom.playjongo.PlayJongo;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -11,30 +9,27 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import io.ebean.*;
+
 @Singleton
 public class UserRepository {
 
-    private MongoCollection collection;
+    private static final Finder<Long, User> find = new Finder<>(User.class);
 
-    @Inject
-    public UserRepository(PlayJongo playJongo) {
-        this.collection = playJongo.jongo().getCollection("user");
-    }
-
-    public User findById(String id) {
-        return collection.findOne("{_id:#}", id).as(User.class);
+    public User findById(Long id) {
+      return find.query().where().eq("id", id).findOne();
     }
 
     public void save(User u){
-        collection.save(u);
+        Ebean.save(u);
     }
 
     public User findByUsernameNormalized(String usernameNormalized) {
-        return collection.findOne("{usernameNormalized:#}",usernameNormalized).as(User.class);
+      return find.query().where().eq("usernameNormalized",usernameNormalized).findOne();
     }
 
     public User findByEmail(String email) {
-        return collection.findOne("{email:#}",email).as(User.class);
+      return find.query().where().eq("email",email).findOne();
     }
 
     public User findByUsernameOrEmail(String login) {
@@ -47,25 +42,29 @@ public class UserRepository {
     }
 
     public List<User> findByUsernameOrEmailMulti(String login) {
-        String normalizedUsername = Utils.normalizeUsername(login);
-        String email = Utils.normalizeEmail(login);
-        List<User> list = new ArrayList<>();
-        Iterator<User> iterator = collection.find("{usernameNormalized:#}", normalizedUsername).as(User.class).iterator();
-        while (iterator.hasNext()) {
-            list.add(iterator.next());
-        }
-        iterator = collection.find("{email:#}", email).as(User.class).iterator();
-        while (iterator.hasNext()) {
-            list.add(iterator.next());
-        }
-        return list;
+      String normalizedUsername = Utils.normalizeUsername(login);
+      String email = Utils.normalizeEmail(login);
+      List<User> list = new ArrayList<>();
+      Iterator<User> iterator = find.query().where().eq("usernameNormalized", normalizedUsername).findIterate();
+      while (iterator.hasNext()) {
+          list.add(iterator.next());
+      }
+      iterator = find.query().where().eq("email", email).findIterate();
+      while (iterator.hasNext()) {
+          list.add(iterator.next());
+      }
+      return list;
     }
 
-    public Iterable<User> findAll(){
-        return collection.find().as(User.class);
+    public Iterable<User> findAll() {
+      return find.query().where().findList();
+    }
+
+    public Iterable<User> findByUserId(Long userId) {
+      return find.query().where().eq("userId", userId).findList();
     }
 
     public long count() {
-        return collection.count();
+      return find.query().where().findCount();
     }
 }

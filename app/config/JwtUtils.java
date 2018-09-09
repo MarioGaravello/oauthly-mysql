@@ -9,12 +9,12 @@ import controllers.routes;
 import dtos.Token;
 import dtos.TokenStatus;
 import models.Client;
-import models.Grant;
+import models.Allow;
 import models.User;
 import play.mvc.Http;
 import play.mvc.Result;
 import repositories.ClientRepository;
-import repositories.GrantRepository;
+import repositories.AllowRepository;
 import repositories.UserRepository;
 
 import javax.inject.Inject;
@@ -41,10 +41,10 @@ public class JwtUtils {
     private final boolean useSecureSessionCookie;
     private final UserRepository userRepository;
     private final ClientRepository clientRepository;
-    private final GrantRepository grantRepository;
+    private final AllowRepository allowRepository;
 
     @Inject
-    public JwtUtils(Config config, UserRepository userRepository, ClientRepository clientRepository, GrantRepository grantRepository) {
+    public JwtUtils(Config config, UserRepository userRepository, ClientRepository clientRepository, AllowRepository allowRepository) {
         jwtSecret = config.getString("jwt.secret");
         expireCookie = config.getDuration("jwt.expire.cookie");
         expireResetCode = config.getDuration("jwt.expire.resetCode");
@@ -54,7 +54,7 @@ public class JwtUtils {
         useSecureSessionCookie = config.getBoolean("use.secure.session.cookie");
         this.userRepository = userRepository;
         this.clientRepository = clientRepository;
-        this.grantRepository = grantRepository;
+        this.allowRepository = allowRepository;
     }
 
     public String prepareResetCode(User user) {
@@ -88,7 +88,7 @@ public class JwtUtils {
             if(exp < (System.currentTimeMillis() / 1000L))
                 return null;
             // check user
-            String user_id = (String) claims.get("user");
+            Long user_id = (Long) claims.get("user");
             User user = userRepository.findById(user_id);
             if(user == null){
                 return null;
@@ -108,7 +108,7 @@ public class JwtUtils {
         }
     }
 
-    public String prepareEmailConfirmationCode(User user, String linkId) {
+    public String prepareEmailConfirmationCode(User user, Long linkId) {
         final long iat = System.currentTimeMillis() / 1000L; // issued at claim
         final long exp = iat + expireResetCode.getSeconds(); // expires claim
         final JWTSigner signer = new JWTSigner(jwtSecret);
@@ -126,7 +126,7 @@ public class JwtUtils {
         return signer.sign(claims);
     }
 
-    public Tuple2<User, String> validateEmailConfirmationCode(String code){
+    public Tuple2<User, Long> validateEmailConfirmationCode(String code){
         if(code == null)
             return null;
         try {
@@ -147,7 +147,7 @@ public class JwtUtils {
             user.setUsername((String) claims.get("username"));
             if(claims.containsKey("password"))
                 user.setPassword((String) claims.get("password"));
-            String linkId = claims.containsKey("linkId") ? (String) claims.get("linkId") : null;
+            Long linkId = claims.containsKey("linkId") ? (Long) claims.get("linkId") : null;
             return Tuple2.apply(user, linkId);
         } catch (JWTVerifyException | SignatureException | InvalidKeyException | NullPointerException e) {
             return null;
@@ -189,7 +189,7 @@ public class JwtUtils {
             if(exp < (System.currentTimeMillis() / 1000L))
                 return null;
             // check user
-            User user = userRepository.findById((String) claims.get("user"));
+            User user = userRepository.findById((Long) claims.get("user"));
             if(user == null) return null;
             // check hash
             int hash = Objects.hash(user.getUsername(), user.getEmail(), user.getPassword());
@@ -247,7 +247,8 @@ public class JwtUtils {
             if(exp < (System.currentTimeMillis() / 1000L))
                 return null;
             // check user
-            String user_id = (String) claims.get("user");
+            Integer Intuser = (Integer) claims.get("user");
+            Long user_id = Long.valueOf(Intuser);
             User user = userRepository.findById(user_id);
             if(user == null){
                 return null;
@@ -268,7 +269,8 @@ public class JwtUtils {
     }
 
 
-    public String prepareAuthorizationCode(String client_id, String client_secret, String grant_id, String redirect_uri) {
+    public String prepareAuthorizationCode(String client_id, String client_secret, Long grant_id, String redirect_uri) {
+        String grant = grant_id.toString();
         int hash = Objects.hash(client_id, client_secret);
         final long iat = System.currentTimeMillis() / 1000L; // issued at claim
         final long exp = iat + expireAuthorizationCode.getSeconds();
@@ -278,12 +280,12 @@ public class JwtUtils {
         claims.put("vt", 3); //type=authorization_code
         claims.put("exp", exp);
         claims.put("h", hash);
-        claims.put("g", grant_id);
+        claims.put("g", grant);
         claims.put("r", redirect_uri);
         return signer.sign(claims);
     }
 
-    public Grant validateAuthorizationCode(String code, String redirect_uri){
+    public Allow validateAuthorizationCode(String code, String redirect_uri){
         if(code == null || redirect_uri == null)
             return null;
         try {
@@ -299,8 +301,9 @@ public class JwtUtils {
             if(exp < (System.currentTimeMillis() / 1000L))
                 return null;
             // check grant
-            String grant_id = (String) claims.get("g");
-            Grant grant = grantRepository.findById(grant_id);
+            String grant_string = (String) claims.get("g");
+            Long grant_id = Long.valueOf( grant_string);
+            Allow grant = allowRepository.findById(grant_id);
             if(grant == null){
                 return null;
             }
@@ -310,7 +313,7 @@ public class JwtUtils {
             if(client == null){
                 return null;
             }
-            int correctHash = Objects.hash(client.getId(), client.getSecret());
+            int correctHash = Objects.hash(client.getClient(), client.getSecret());
             if(receivedHash != correctHash) {
                 return null;
             }
@@ -343,7 +346,8 @@ public class JwtUtils {
      *
      * @return generated token
      */
-    public Token prepareToken(String client_id, String client_secret, String grant_id, Collection<String> scopes) {
+    public Token prepareToken(String client_id, String client_secret, Long grant_id, Collection<String> scopes) {
+        String grant = grant_id.toString();
         int hash = Objects.hash(client_id, client_secret);
         final long iat = System.currentTimeMillis() / 1000L; // issued at claim
         final long exp = iat + expireAccessToken.getSeconds(); // expires claim. In this case the token expires in 60 seconds
@@ -353,7 +357,7 @@ public class JwtUtils {
         claims.put("vt", 1); //version=1 & type=access_token
         claims.put("exp", exp);
         claims.put("h", hash);
-        claims.put("grant", grant_id);
+        claims.put("grant", grant);
         final String token_a = signer.sign(claims);
 
         final HashMap<String, Object> claims_r = new HashMap<>();
@@ -361,7 +365,7 @@ public class JwtUtils {
         claims_r.put("vt", 2); //version=1 & type=refresh_token
         claims_r.put("exp", exp_r);
         claims_r.put("h", hash);
-        claims_r.put("grant", grant_id);
+        claims_r.put("grant", grant);
         final String token_r = signer.sign(claims_r);
 
         /* The last parameter (scope) is entirely optional. You can use it to implement scoping requirements. If you would like so, put it to claims map to verify it. */
@@ -372,7 +376,7 @@ public class JwtUtils {
      * Validate given token and return its type
      * @see TokenStatus
      */
-    public Tuple2<Grant, TokenStatus> getTokenStatus(String access_token){
+    public Tuple2<Allow, TokenStatus> getTokenStatus(String access_token){
         if(access_token == null)
             return new Tuple2<>(null, TokenStatus.INVALID);
         try {
@@ -388,8 +392,9 @@ public class JwtUtils {
             if(exp < (System.currentTimeMillis() / 1000L))
                 return new Tuple2<>(null, TokenStatus.INVALID);
             // check grant
-            String grant_id = (String) claims.get("grant");
-            Grant grant = grantRepository.findById(grant_id);
+            String grant_str = (String) claims.get("grant");
+            Long grant_id = Long.valueOf(grant_str);
+            Allow grant = allowRepository.findById(grant_id);
             if(grant == null){
                 return new Tuple2<>(null, TokenStatus.INVALID);
             }
@@ -399,7 +404,7 @@ public class JwtUtils {
             }
             // check hash value
             int receivedHash = (int) claims.get("h");
-            int correctHash = Objects.hash(client.getId(), client.getSecret());
+            int correctHash = Objects.hash(client.getClient(), client.getSecret());
             if(receivedHash != correctHash) {
                 return new Tuple2<>(null, TokenStatus.INVALID);
             }

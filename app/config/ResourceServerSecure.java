@@ -1,6 +1,6 @@
 package config;
 
-import models.Grant;
+import models.Allow;
 import play.libs.typedmap.TypedKey;
 import play.mvc.With;
 
@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ResourceServerSecure {
-    TypedKey<Grant> GRANT = TypedKey.create("grant_r");
+    TypedKey<Allow> GRANT = TypedKey.create("grant_r");
 
     /**
      * Whitespace separated list of scopes for this endpoint.

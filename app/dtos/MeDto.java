@@ -11,7 +11,7 @@ import java.util.Objects;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MeDto {
-    private String id;
+    private Long id;
     private String name;
     private String email;
     private Map<String, Tuple2<String, Token>> socialLinks;
@@ -19,17 +19,17 @@ public class MeDto {
     public MeDto() {
     }
 
-    public MeDto(String id, String name, String email) {
+    public MeDto(Long id, String name, String email) {
         this.id = id;
         this.name = name;
         this.email = email;
     }
 
-    public String getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

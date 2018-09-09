@@ -1,8 +1,7 @@
 package repositories;
 
 import models.ProviderLink;
-import org.jongo.MongoCollection;
-import uk.co.panaxiom.playjongo.PlayJongo;
+import models.User;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -11,38 +10,35 @@ import java.util.stream.StreamSupport;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import io.ebean.*;
+
 @Singleton
 public class ProviderLinkRepository {
 
-    private MongoCollection collection;
+    private static final Finder<Long, ProviderLink> find = new Finder<>(ProviderLink.class);
 
-    @Inject
-    public ProviderLinkRepository(PlayJongo playJongo) {
-        this.collection = playJongo.jongo().getCollection("providerLink");
-//        collection.ensureIndex(); //providerKey & remoteUserId, unique
+    public ProviderLink findById(Long id) {
+      return find.query().where().eq("id:", id).findOne();
     }
 
-    public ProviderLink findById(String id) {
-        return collection.findOne("{_id:#}", id).as(ProviderLink.class);
+    public ProviderLink findByProvider(String providerKey, Long remoteUserId) {
+      return find.query().where().and(Expr.eq("providerKey", providerKey), Expr.eq("remoteUserId", remoteUserId)).findOne();
     }
 
-    public ProviderLink findByProvider(String providerKey, String remoteUserId) {
-        return collection.findOne("{providerKey:#, remoteUserId:#}", providerKey, remoteUserId).as(ProviderLink.class);
+    public List<ProviderLink> findByUserId(Long userId) {
+      return StreamSupport.stream(find.query().where().eq("userId", userId).findList().spliterator(), false).collect(Collectors.toList());
     }
 
-    public List<ProviderLink> findByUserId(String userId){
-      return StreamSupport.stream(collection.find("{userId:#}", userId).as(ProviderLink.class).spliterator(), false).collect(Collectors.toList());
+    public java.util.Map<String, Long> findMapByUserId(Long userId) {
+      return StreamSupport.stream(find.query().where().eq("userId", userId).findList().spliterator(), false).collect(Collectors.toMap(i -> i.getProviderKey(), i -> i.getId()));
     }
 
-    public java.util.Map<String, String> findMapByUserId(String userId){
-      return StreamSupport.stream(collection.find("{userId:#}", userId).as(ProviderLink.class).spliterator(), false).collect(Collectors.toMap(i -> i.getProviderKey(), i -> i.getId()));
-    }
 
     public void save(ProviderLink u){
-        collection.save(u);
+        Ebean.save(u);
     }
-    
-    public void delete(String id){
-      collection.remove("{_id:#}", id);
+
+    public void delete(Long id){
+      Ebean.delete(ProviderLink.class, id);
     }
 }

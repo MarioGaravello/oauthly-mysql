@@ -6,22 +6,22 @@ import dtos.Token;
 import dtos.TokenStatus;
 import config.Utils;
 import models.Client;
-import models.Grant;
+import models.Allow;
+import models.Scope;
 import models.User;
 import play.data.DynamicForm;
 import play.data.FormFactory;
 import play.libs.Json;
 import play.mvc.Result;
 import repositories.ClientRepository;
-import repositories.GrantRepository;
+import repositories.AllowRepository;
+import repositories.ScopeRepository;
 import repositories.UserRepository;
 import scala.Tuple2;
 
 import javax.inject.Inject;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>This controller implements oauth2 authorization server semantics with password grant type.<br>
@@ -38,15 +38,17 @@ public class OAuthAuthorizationServerController extends play.mvc.Controller {
     private final JwtUtils jwtUtils;
     private final ClientRepository clientRepository;
     private final UserRepository userRepository;
-    private final GrantRepository grantRepository;
+    private final AllowRepository allowRepository;
+    private final ScopeRepository scopeRepository;
 
     @Inject
-    public OAuthAuthorizationServerController(FormFactory formFactory, JwtUtils jwtUtils, ClientRepository clientRepository, UserRepository userRepository, GrantRepository grantRepository) {
+    public OAuthAuthorizationServerController(FormFactory formFactory, JwtUtils jwtUtils, ClientRepository clientRepository, UserRepository userRepository, AllowRepository allowRepository, ScopeRepository scopeRepository) {
         this.formFactory = formFactory;
         this.jwtUtils = jwtUtils;
         this.clientRepository = clientRepository;
         this.userRepository = userRepository;
-        this.grantRepository = grantRepository;
+        this.allowRepository = allowRepository;
+        this.scopeRepository = scopeRepository;
     }
 
     /**
@@ -71,7 +73,9 @@ public class OAuthAuthorizationServerController extends play.mvc.Controller {
         }
         String client_id = form.get("client_id");
         String client_secret = form.get("client_secret");
-        Client client = clientRepository.findById(client_id);
+        Long id_client = clientRepository.findClientId(client_id);
+        Client client = clientRepository.findByClient(client_id);
+        Scope s = scopeRepository.findByClient(id_client);
         if(client == null || !Objects.equals(client.getSecret(), client_secret)){
             return badRequest(Json.newObject().put("message", "either client_id or client_secret is missing or invalid"));
         }
@@ -85,23 +89,35 @@ public class OAuthAuthorizationServerController extends play.mvc.Controller {
         switch (grant_type) {
             case "client_credentials": {
                 /* In this mode, we use client_id as user_id in Grant */
-                Grant grant = grantRepository.findByClientAndUser(client_id, client_id);
+                Allow grant = allowRepository.findByClient(id_client);
                 if(grant == null){
-                    grant = new Grant();
-                    grant.setId(Utils.newId());
-                    grant.setClientId(client_id);
-                    grant.setUserId(client_id);
-                    grantRepository.save(grant);
+                    grant = new Allow();
+                    grant.setClientId(client);
+                    allowRepository.save(grant);
                 }
-                Token token = jwtUtils.prepareToken(client_id, client_secret, grant.getId(), grant.getScopes());
+                if(s == null){
+                    s = new Scope();
+                    if(scope == null){
+                        Set<String> scp = new HashSet<String>();
+                        scp.add(" ");
+                        s.setScopes(scp);
+                    }else{
+                        Set<String> scp = new HashSet<String>(Arrays.asList(scope.split(" ")));
+                        s.setScopes(scp);
+                    }
+                    s.setClientId(client);
+                    s.save();
+                }
+                Token token = jwtUtils.prepareToken(client_id, client_secret, grant.getId(), s.getScopes());
                 return ok(Json.toJson(token));
             }
             case "authorization_code": {
-                Grant grant = jwtUtils.validateAuthorizationCode(code, redirect_uri);
+                Allow grant = jwtUtils.validateAuthorizationCode(code, redirect_uri);
                 if(grant == null){
                     return badRequest(Json.newObject().put("message", "invalid code or redirect_uri"));
                 }
-                Token token = jwtUtils.prepareToken(client_id, client_secret, grant.getId(), grant.getScopes());
+                Token token = jwtUtils.prepareToken(client_id, client_secret, grant.getId(), s.getScopes());
+                System.out.println("token"+ token.toString());
                 return ok(Json.toJson(token));
             }
             case "password": {
@@ -115,32 +131,47 @@ public class OAuthAuthorizationServerController extends play.mvc.Controller {
                 if(user == null || !user.checkPassword(password)){
                     return badRequest(Json.newObject().put("message", "invalid username or password"));
                 }
-                Grant grant = grantRepository.findByClientAndUser(client_id, user.getId());
+                Allow grant = allowRepository.findByClientAndUser(id_client, user.getId());
+                if(s == null){
+                    s = new Scope();
+                }
                 if(grant == null){
                     // create new grant automatically because this is a trusted app
-                    grant = new Grant();
-                    grant.setId(Utils.newId());
-                    grant.setUserId(user.getId());
-                    grant.setClientId(client_id);
+                    grant = new Allow();
+                    grant.setUserId(user);
+                    grant.setClientId(client);
                     if(scope != null){
-                        grant.setScopes(new HashSet<>(Arrays.asList(scope.split(" "))));
+                        s.setScopes(new HashSet<>(Arrays.asList(scope.split(" "))));
                     }
-                    grantRepository.save(grant);
+                    allowRepository.save(grant);
                 } else if (scope != null) {
-                    grant.getScopes().addAll(Arrays.asList(scope.split(" ")));
-                    grantRepository.save(grant);
+                    s.getScopes().addAll(Arrays.asList(scope.split(" ")));
+                    allowRepository.save(grant);
                 }
-                Token token = jwtUtils.prepareToken(client_id, client_secret, grant.getId(), grant.getScopes());
+                Token token = jwtUtils.prepareToken(client_id, client_secret, grant.getId(), s.getScopes());
                 return ok(Json.toJson(token));
             }
             case "refresh_token": {
 
-                Tuple2<Grant, TokenStatus> tokenStatus = jwtUtils.getTokenStatus(refresh_token);
+                Tuple2<Allow, TokenStatus> tokenStatus = jwtUtils.getTokenStatus(refresh_token);
                 if (tokenStatus._2() != TokenStatus.VALID_REFRESH) {
                     return badRequest(Json.newObject().put("message", "invalid_refresh_token"));
                 }
-                Grant grant = tokenStatus._1();
-                Token token = jwtUtils.prepareToken(client_id, client_secret, grant.getId(), grant.getScopes());
+                Allow grant = tokenStatus._1();
+                if(s == null) {
+                    s = new Scope();
+                    if(scope == null){
+                        Set<String> scp = new HashSet<String>();
+                        scp.add(" ");
+                        s.setScopes(scp);
+                    }else{
+                        Set<String> scp = new HashSet<String>(Arrays.asList(scope.split(" ")));
+                        s.setScopes(scp);
+                    }
+                    s.setClientId(client);
+                    s.save();
+                }
+                Token token = jwtUtils.prepareToken(client_id, client_secret, grant.getId(), s.getScopes());
                 return ok(Json.toJson(token));
             }
             default:
@@ -151,7 +182,9 @@ public class OAuthAuthorizationServerController extends play.mvc.Controller {
     @AuthorizationServerSecure
     public Result authorize(String client_id, String response_type, String redirect_uri, String scope, String state) {
 
-        Client client = clientRepository.findById(client_id);
+        Long id_client = clientRepository.findClientId(client_id);
+        Client client = clientRepository.findByClient(client_id);
+
         if(client == null){
             return badRequest(Json.newObject().put("message", "invalid client_id"));
         }
@@ -167,35 +200,42 @@ public class OAuthAuthorizationServerController extends play.mvc.Controller {
             return redirect(routes.ProfileController.changeEmailPage(ctx().request().uri()));
         }
 
-        Grant grant = grantRepository.findByClientAndUser(client_id, user.getId());
-
+        Allow grant = allowRepository.findByClientAndUser(id_client, user.getId());
+        Scope s = scopeRepository.findByClient(id_client);
         if(client.isTrusted()) {
             if(grant == null){
-                grant = new Grant();
-                grant.setId(Utils.newId());
-                grant.setUserId(user.getId());
-                grant.setClientId(client_id);
+                grant = new Allow();
+                grant.setUserId(user);
+                grant.setClientId(client);
             }
             if(scope != null){
-                List<String> scopes = Arrays.asList(scope.split(" "));
-                grant.getScopes().addAll(scopes);
+                Set<String> scp = new HashSet<String>(Arrays.asList(scope.split(" ")));
+                if(scp!=null && s!=null){
+                    s.setScopes(scp);
+                }else if(scp!=null && s==null){
+                    s = new Scope();
+                    s.setScopes(scp);
+                    s.setClientId(client);
+                    s.save();
+                }
             }
-            grantRepository.save(grant);
+            allowRepository.save(grant);
         }
+
 
         if(grant != null){
             boolean scopeOK = true;
             if(scope != null){
                 List<String> scopes = Arrays.asList(scope.split(" "));
-                for (String s : scopes) {
-                    if(!grant.getScopes().contains(s)){
+                for (String str : scopes) {
+                    if(!s.getScopes().contains(str)){
                         scopeOK = false;
                         break;
                     }
                 }
             }
             if(scopeOK){
-                String code = jwtUtils.prepareAuthorizationCode(client.getId(), client.getSecret(), grant.getId(), redirect_uri);
+                String code = jwtUtils.prepareAuthorizationCode(client.getClient(), client.getSecret(), grant.getId(), redirect_uri);
                 String uri = String.format("%s%scode=%s", redirect_uri, redirect_uri.contains("?") ? "&" : "?", code);
                 if(state != null){
                     uri += "&state="+state;
@@ -210,7 +250,9 @@ public class OAuthAuthorizationServerController extends play.mvc.Controller {
     @AuthorizationServerSecure
     public Result authorizeDo(String client_id, String response_type, String redirect_uri, String scope, String state) {
 
-        Client client = clientRepository.findById(client_id);
+        Long id_client = clientRepository.findClientId(client_id);
+        Client client = clientRepository.findByClient(client_id);
+        Scope s = scopeRepository.findByClient(id_client);
         if(client == null){
             return badRequest(Json.newObject().put("message", "invalid client_id"));
         }
@@ -223,25 +265,23 @@ public class OAuthAuthorizationServerController extends play.mvc.Controller {
 
         User user = request().attrs().get(AuthorizationServerSecure.USER);
 
-        Grant grant = grantRepository.findByClientAndUser(client_id, user.getId());
+        Allow grant = allowRepository.findByClientAndUser(id_client, user.getId());
         if(grant == null){
-            grant = new Grant();
-            grant.setId(Utils.newId());
-            grant.setUserId(user.getId());
-            grant.setClientId(client_id);
+            grant = new Allow();
+            grant.setUserId(user);
+            grant.setClientId(client);
         }
         if(scope != null){
-            List<String> scopes = Arrays.asList(scope.split(" "));
-            grant.getScopes().addAll(scopes);
+            Set<String> scp = new HashSet<String>(Arrays.asList(scope.split(" ")));
+            s.setScopes(scp);
         }
-        grantRepository.save(grant);
+        allowRepository.save(grant);
 
-        String code = jwtUtils.prepareAuthorizationCode(client.getId(), client.getSecret(), grant.getId(), redirect_uri);
+        String code = jwtUtils.prepareAuthorizationCode(client.getClient(), client.getSecret(), grant.getId(), redirect_uri);
         String uri = String.format("%s%scode=%s", redirect_uri, redirect_uri.contains("?") ? "&" : "?", code);
         if(state != null){
             uri += "&state="+state;
         }
         return redirect(uri);
     }
-
 }

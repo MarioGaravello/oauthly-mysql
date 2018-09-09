@@ -1,21 +1,35 @@
 package models;
 
 import dtos.Token;
-import org.jongo.marshall.jackson.oid.MongoId;
+
 
 /**
  * Models an authorization from an oauth provider (facebook, twitter, etc)
  * to one of oauthly users.
  * Created by Selim Eren Bekçe on 15.08.2017.
  */
+import javax.persistence.*;
+import java.util.Date;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import play.data.validation.Constraints;
+
+import io.ebean.*;
+
+@Entity
 public class ProviderLink {
-    @MongoId
-    private String id;
+   @Id
+   @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+    private Long id;
     /**
      * belonging user, could be null while setting up
      */
 //    @Indexed
-    private String userId;
+    private Long userId;
     /**
      * e.g. 'facebook' or 'twitter'
      */
@@ -27,24 +41,23 @@ public class ProviderLink {
     /**
      * External user id (e.g. on facebook)
      */
-//    @Indexed
-    private String remoteUserId;
+    private Long remoteUserId;
     private String remoteUserEmail;
     private String remoteUserName;
 
-    public String getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public String getUserId() {
+    public Long getUserId() {
         return userId;
     }
 
-    public void setUserId(String userId) {
+    public void setUserId(Long userId) {
         this.userId = userId;
     }
 
@@ -64,11 +77,11 @@ public class ProviderLink {
         this.token = token;
     }
 
-    public String getRemoteUserId() {
+    public Long getRemoteUserId() {
         return remoteUserId;
     }
 
-    public void setRemoteUserId(String remoteUserId) {
+    public void setRemoteUserId(Long remoteUserId) {
         this.remoteUserId = remoteUserId;
     }
 

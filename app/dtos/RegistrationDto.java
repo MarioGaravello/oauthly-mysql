@@ -128,7 +128,7 @@ public class RegistrationDto implements Constraints.Validatable<List<ValidationE
 
 
     @Override
-    public ValidationError validateUniqueEmail(UserRepository userRepository, String currentUserId) {
+    public ValidationError validateUniqueEmail(UserRepository userRepository, Long currentUserId) {
         // advanced email validation with commons-validator
 //        if(!EmailValidator.getInstance().isValid(dto.getEmail())){
 //            form = form.withError("email", "Invalid.userForm.email");

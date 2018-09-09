@@ -44,7 +44,7 @@ public class RegisterController extends Controller {
         return ok(template.render(1, null, null, null, formFactory.form(RegistrationDto.class), next, Html.apply(config.getString("tos.text"))));
     }
 
-    public Result step2(String next, String linkId) {
+    public Result step2(String next, Long linkId) {
         ProviderLink link = providerLinkRepository.findById(linkId);
         if(link != null && link.getUserId() == null){
             String remoteUserEmail = link.getRemoteUserEmail();
@@ -61,7 +61,7 @@ public class RegisterController extends Controller {
     }
 
     @RecaptchaProtected
-    public Result post1(String next, String linkId) {
+    public Result post1(String next, Long linkId) {
         int state;
         ProviderLink link = null;
         String providerName = null;
@@ -116,7 +116,6 @@ public class RegisterController extends Controller {
             return redirect(routes.RegisterController.await());
         } else if (state == 3){
             User user = new User();
-            user.setId(Utils.newId());
             user.setEmail(link.getRemoteUserEmail());
             user.setEmailVerified(true);
             user.setUsername(dto.getUsername());
@@ -139,7 +138,7 @@ public class RegisterController extends Controller {
     }
 
     public Result step5(String next, String code) {
-        Tuple2<User, String> tuple2 = jwtUtils.validateEmailConfirmationCode(code);
+        Tuple2<User, Long> tuple2 = jwtUtils.validateEmailConfirmationCode(code);
         if(tuple2 == null){
             flash("warning", "Cannot create your account: Invalid or expired confirmation code, please start over");
             return redirect(routes.LoginController.get(next));
@@ -156,7 +155,7 @@ public class RegisterController extends Controller {
             flash("warning", "Cannot create your account: the username you entered ("+dto.getUsername()+") is no longer available, please start over");
             redirect(routes.RegisterController.step1(next));
         }
-        String linkId = tuple2._2;
+        Long linkId = tuple2._2;
         ProviderLink link = null;
         if(linkId != null){
             link = providerLinkRepository.findById(linkId);
@@ -167,7 +166,6 @@ public class RegisterController extends Controller {
         }
 
         User user = new User();
-        user.setId(Utils.newId());
         user.setEmail(dto.getEmail());
         user.setEmailVerified(true);
         user.setUsername(dto.getUsername());

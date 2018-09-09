@@ -1,4 +1,4 @@
-@()(user: models.User, providers: List[(String, String)], userProviders: Map[String, String], changePasswordForm: Form[dtos.RegistrationDto], changeEmailForm: Form[dtos.RegistrationDto])
+@()(user: models.User, providers: List[(String, String)], userProviders: Map[String, Long], changePasswordForm: Form[dtos.RegistrationDto], changeEmailForm: Form[dtos.RegistrationDto])
 @import helper._
 
 @mainWithNavigation("Profile", "profile", user) {

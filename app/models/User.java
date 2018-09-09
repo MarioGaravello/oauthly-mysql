@@ -1,22 +1,34 @@
 package models;
 
-import org.jongo.marshall.jackson.oid.MongoId;
 import org.mindrot.jbcrypt.BCrypt;
 
 /**
  * Models a user, more specifically a 'resource owner'
  * Created by Selim Eren Bekçe on 15.08.2017.
  */
+ import javax.persistence.*;
+ import java.util.Date;
+ import java.util.List;
+import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+ import com.fasterxml.jackson.annotation.JsonIgnore;
+ import com.fasterxml.jackson.annotation.JsonProperty;
+ import play.data.validation.Constraints;
+
+ import io.ebean.*;
+
+@Entity
 public class User {
-    @MongoId
-    private String id;
-//    @Indexed
+   @Id
+   @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+    private Long id;
     private String username;
-//    @Indexed
     private String usernameNormalized;
-//    @Indexed
     private String email;
     private String password;
+
     /**
      * Can create his/her own clients
      */
@@ -54,11 +66,11 @@ public class User {
         return BCrypt.checkpw(password_plaintext, password);
     }
 
-    public String getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

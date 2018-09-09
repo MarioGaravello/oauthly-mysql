@@ -12,7 +12,7 @@ public class FacebookTokenRetriever implements Function<OAuthContext, Completion
     @Override
     public CompletionStage<Token> apply(OAuthContext context) {
         return context.getWs().url(context.getProvider().getTokenUrl())
-                .addQueryParameter("client_id", context.getProvider().getClientId())
+                .addQueryParameter("client_id", context.getProvider().getClientClient())
                 .addQueryParameter("client_secret", context.getProvider().getClientSecret())
                 .addQueryParameter("code", context.getCode())
                 .addQueryParameter("redirect_uri", context.getRedirectUri())

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import config.AuthorizationServerSecure;
 import config.ResourceServerSecure;
 import config.Utils;
-import models.Grant;
+import models.Allow;
 import models.User;
 import play.mvc.BodyParser;
 import play.mvc.Controller;
@@ -36,7 +36,7 @@ public class UserController extends Controller {
     @ResourceServerSecure(scope = "user:create")
     @BodyParser.Of(BodyParser.Json.class)
     public Result apiCreate(){
-        Grant grant = request().attrs().get(ResourceServerSecure.GRANT);
+        Allow grant = request().attrs().get(ResourceServerSecure.GRANT);
         User user = userRepository.findById(grant.getUserId());
         if(!user.isAdmin()) {
             return unauthorized("need admin");
@@ -45,7 +45,8 @@ public class UserController extends Controller {
         boolean bypassEmailCheck = json.path("options").path("bypassEmailCheck").asBoolean(false);
         boolean bypassUsernameCheck = json.path("options").path("bypassUsernameCheck").asBoolean(false);
         boolean update = json.path("options").path("update").asBoolean(false);
-        String id = json.path("user").path("id").asText(Utils.newId());
+        String s = json.path("user").path("id").asText(Utils.newClient()); // verify
+        Long id = Long.valueOf(s);
         String username = json.path("user").path("username").asText(null);
         String email = json.path("user").path("email").asText(null);
         String password = json.path("user").path("password").asText(null);

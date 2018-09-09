@@ -15,7 +15,7 @@
             <tbody>
             @for(client <- clients) {
             <tr>
-                <td><a href="@{routes.ClientController.edit(client.getId)}">@client.getId</a></td>
+                <td><a href="@{routes.ClientController.edit(client.getClient)}">@client.getClient</a></td>
                 <td>@client.getName</td>
             </tr>
             }

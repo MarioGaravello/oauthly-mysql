@@ -22,7 +22,7 @@ public class OAuthContext {
 		this.provider = provider;
 		this.ws = ws;
 	}
-	
+
 	public String prepareAuthorizeUrl() {
 		if(redirectUri == null){
 			throw new IllegalStateException("No redirectUri present");
@@ -33,7 +33,7 @@ public class OAuthContext {
 		try {
 			StringBuilder builder = new StringBuilder();
 			builder.append(provider.getAuthorizeUrl())
-					.append("?client_id=").append(provider.getClientId())
+					.append("?client_id=").append(provider.getClientClient())
 					.append("&response_type=code")
 					.append("&redirect_uri=").append(URLEncoder.encode(redirectUri, "utf-8"))
 					.append("&state=").append(state);
@@ -47,7 +47,7 @@ public class OAuthContext {
 			throw new Error(e);
 		}
 	}
-	
+
 	public CompletionStage<Token> retrieveToken() {
 		if(code == null){
 			throw new IllegalStateException("No code present");
@@ -57,7 +57,7 @@ public class OAuthContext {
 		}
 //		return ws.url(provider.getTokenUrl())
 //				.setContentType("application/x-www-form-urlencoded")
-//				.post(String.format("client_id=%s&client_secret=%s&grant_type=authorization_code&code=%s&redirect_uri=%s", provider.getClientId(), provider.getClientSecret(), code, redirectUri))
+//				.post(String.format("client_id=%s&client_secret=%s&grant_type=authorization_code&code=%s&redirect_uri=%s", provider.getClientClient(), provider.getClientSecret(), code, redirectUri))
 		return provider.getTokenRetriever().apply(this);
 	}
 

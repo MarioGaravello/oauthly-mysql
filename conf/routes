@@ -12,8 +12,8 @@ GET     /login          controllers.LoginController.get(next: String ?= null)
 POST    /login          controllers.LoginController.post(next: String ?= null)
 
 GET     /register           controllers.RegisterController.step1(next: String ?= null)
-GET     /register/provider  controllers.RegisterController.step2(next: String ?= null, link: String)
-POST    /register           controllers.RegisterController.post1(next: String ?= null, link: String ?= null)
+GET     /register/provider  controllers.RegisterController.step2(next: String ?= null, link: Long)
+POST    /register           controllers.RegisterController.post1(next: String ?= null, link: java.lang.Long ?= null)
 GET     /register/confirm   controllers.RegisterController.step5(next: String ?= null, code: String)
 GET     /register/await     controllers.RegisterController.await
 
@@ -28,8 +28,8 @@ POST    /profile/password       controllers.ProfileController.changePassword
 GET     /profile/email          controllers.ProfileController.changeEmailPage(next: String ?= null)
 POST    /profile/email          controllers.ProfileController.changeEmail(next: String ?= null)
 GET     /profile/email/confirm  controllers.ProfileController.changeEmailConfirm(code: String, next: String ?= null)
-GET     /profile/link           controllers.ProfileController.linkProvider(linkId: String)
-POST    /profile/unlink         controllers.ProfileController.unlinkProvider(linkId: String)
+GET     /profile/link           controllers.ProfileController.linkProvider(linkId: Long)
+POST    /profile/unlink         controllers.ProfileController.unlinkProvider(linkId: Long)
 
 GET     /client        controllers.ClientController.get
 GET     /client/new    controllers.ClientController.create
@@ -44,9 +44,6 @@ POST    /oauth/token        controllers.OAuthAuthorizationServerController.token
 GET     /oauth/authorize    controllers.OAuthAuthorizationServerController.authorize(client_id: String, response_type: String, redirect_uri: String, scope: String ?= "profile", state: String ?= null)
 POST    /oauth/authorize    controllers.OAuthAuthorizationServerController.authorizeDo(client_id: String, response_type: String, redirect_uri: String, scope: String ?= "profile", state: String ?= null)
 
-GET     /discourse      controllers.DiscourseController.get
-POST    /discourse      controllers.DiscourseController.updateSettings
-GET     /discourse/sso  controllers.DiscourseController.sso(sso: String, sig: String)
 
 GET     /oauth/client/:providerKey/authorize  controllers.OAuthClientController.authorize(providerKey: String, next: String ?= null)
 GET     /oauth/client/:providerKey/callback   controllers.OAuthClientController.callback(providerKey: String, code: java.util.Optional[String], error: java.util.Optional[String], state: java.util.Optional[String])

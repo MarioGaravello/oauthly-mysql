@@ -19,7 +19,7 @@ public class GoogleTokenRetriever implements Function<OAuthContext, CompletionSt
                     .post(String.format("code=%s&redirect_uri=%s&client_id=%s&client_secret=%s&grant_type=authorization_code",
                             URLEncoder.encode(context.getCode(), "utf-8"),
                             URLEncoder.encode(context.getRedirectUri(), "utf-8"),
-                            URLEncoder.encode(context.getProvider().getClientId(), "utf-8"),
+                            URLEncoder.encode(context.getProvider().getClientClient(), "utf-8"),
                             URLEncoder.encode(context.getProvider().getClientSecret(), "utf-8")))
                     .handleAsync((res, e) -> {
                         if(e != null) {
